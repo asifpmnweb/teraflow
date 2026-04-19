@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeraDownloader | Premium Terabox Downloader</title>
+    <meta name="description"
+        content="Download videos from Terabox links instantly with TeraDownloader. Fast, secure, and modern downloader.">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>TeraDownloader</h1>
+            <p class="subtitle">Experience lightning-fast Terabox link extraction</p>
+        </header>
+
+        <main class="main-card">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Paste Terabox URL here..." autocomplete="off">
+            </div>
+
+            <button id="downloadBtn" class="btn btn-primary">
+                <span id="btnSpinner" class="spinner"></span>
+                <span id="btnText">Download Video</span>
+            </button>
+
+            <div id="errorMessage"
+                style="color: var(--error); margin-top: 1rem; text-align: center; display: none; font-size: 0.9rem;">
+            </div>
+
+            <section id="result">
+                <div class="file-preview">
+                    <div class="thumbnail-container">
+                        <img id="fileThumbnail" src="" alt="Video thumbnail">
+                    </div>
+                    <div class="file-info">
+                        <h2 id="fileName" class="file-name">Video Title Here</h2>
+                        <div class="file-meta">
+                            <span>Size: <span id="fileSize">0 MB</span></span>
+                            <span>Direct Link</span>
+                        </div>
+
+                        <a id="directDownloadLink" href="#" target="_blank" class="btn btn-primary"
+                            style="margin-bottom: 0.8rem;">
+                            Confirm Download
+                        </a>
+                        <button id="copyBtn" class="btn btn-secondary">
+                            Copy Link
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="disclaimer">
+            <p>TeraDownloader.com is an independent utility and is not affiliated with, endorsed by, or associated with
+                the official TeraBox website, its domain (terabox.app), or Flextech Inc. Our platform serves exclusively
+                as a tool for generating direct download links from existing TeraBox URLs; we do not host, store, or
+                upload any user files or third-party content on our own servers. We operate with a firm commitment to
+                legal compliance and the protection of intellectual property, and we do not promote or engage in any
+                unauthorized activities. If you are the owner of TeraBox or a copyright holder and believe this service
+                oversteps its bounds, please contact us via the email address listed on our Contact page so that we may
+                address your concerns directly.</p>
+            <p style="margin-top: 1.5rem; opacity: 0.5;">&copy; 2024 TeraDownloader.com</p>
+        </footer>
+    </div>
+
+    <div id="toast" class="toast">Link copied to clipboard!</div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
