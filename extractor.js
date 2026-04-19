@@ -36,31 +36,40 @@ async function extractTeraboxInfo(teraboxUrl) {
         }
         const surl = surlMatch[1];
 
-        // 2. Fetch file list using the surl
-        // Note: For some links, we need the 'uk' and 'shareid' which are found in the page HTML/Cookies.
-        // We'll try the common public API first.
-        const apiUrl = `https://www.terabox.com/share/list?surl=${surl}&root=1&desc=1&order=name&num=20&page=1`;
+        // 2. Fetch file list using shorturlinfo API (often bypasses login requirements)
+        const infoUrl = `https://www.terabox.com/api/shorturlinfo?surl=${surl}`;
         
-        const apiResponse = await axios.get(apiUrl, { headers });
+        const infoResponse = await axios.get(infoUrl, { 
+            headers: {
+                ...headers,
+                'User-Agent': 'Logitech/1.7.1 (Logitech G HUB; Windows 10; 10.0.19045)', // Specific high-trust User-Agent
+            }
+        });
         
-        if (apiResponse.data.errno !== 0) {
-            console.warn(`Direct API failed (Error ${apiResponse.data.errno}). Attempting fallback.`);
-            // Fallback: This is where we would parse the uk/shareid if needed
-            throw new Error('The link is protected or requires a login cookie. Please try a public link.');
+        if (infoResponse.data.errno !== 0) {
+            console.warn(`shorturlinfo failed (Error ${infoResponse.data.errno}). Trying secondary API.`);
+            
+            // Secondary approach: share/list
+            const listUrl = `https://www.terabox.com/share/list?surl=${surl}&root=1&desc=1&order=name&num=20&page=1`;
+            const listResponse = await axios.get(listUrl, { headers });
+            
+            if (listResponse.data.errno !== 0) {
+                throw new Error('This link is private or restricted by Terabox. Please try a public share link.');
+            }
+            
+            var fileList = listResponse.data.list;
+        } else {
+            var fileList = infoResponse.data.list;
         }
 
-        const fileList = apiResponse.data.list;
         if (!fileList || fileList.length === 0) {
             throw new Error('No files found in this link.');
         }
 
         const file = fileList[0];
-        
-        // Terabox high-quality thumbnails
         const thumbnail = file.thumbs ? (file.thumbs.url3 || file.thumbs.url2 || file.thumbs.url1) : 'https://raw.githubusercontent.com/Antigravity/assets/main/video-placeholder.png';
 
-        // Reconstruct the download link using a known working bypass pattern
-        // This pattern often routes through high-speed nodes
+        // Direct Link Generation with specific download API
         const downloadUrl = `https://www.terabox.com/share/download?surl=${surl}&fs_id=${file.fs_id}`;
 
         return {
