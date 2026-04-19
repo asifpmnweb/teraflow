@@ -59,6 +59,7 @@ downloadBtn.addEventListener('click', async () => {
         
         // Switch Views
         showPlayerView(true);
+        updateShareUrl(data);
 
     } catch (error) {
         console.error('Download Error:', error);
@@ -143,3 +144,38 @@ urlInput.addEventListener('keypress', (e) => {
         downloadBtn.click();
     }
 });
+
+// --- New Feature: Deep Linking & Sharing ---
+
+// Check for URL parameters on load to support direct playing
+// Example: /?url=...&filename=...&size=...
+function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+    const title = params.get('filename');
+    const size = params.get('size');
+
+    if (videoUrl && title && size) {
+        // Populate and show player immediately
+        fileName.textContent = decodeURIComponent(title);
+        fileSize.textContent = decodeURIComponent(size);
+        videoPlayer.src = decodeURIComponent(videoUrl);
+        directDownloadLink.href = decodeURIComponent(videoUrl);
+        
+        showPlayerView(true);
+    }
+}
+
+// Function to update the browser URL for easy sharing
+function updateShareUrl(videoData) {
+    const params = new URLSearchParams();
+    params.set('url', videoData.download_url);
+    params.set('filename', videoData.title);
+    params.set('size', videoData.size);
+    
+    const newUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+}
+
+// Call on startup
+checkUrlParams();
