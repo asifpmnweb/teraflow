@@ -7,13 +7,13 @@
     <title>TeraDownloader | Premium Terabox Downloader</title>
     <meta name="description"
         content="Download videos from Terabox links instantly with TeraDownloader. Fast, secure, and modern downloader.">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>TeraDownloader</h1>
+            <h1>TeraFlow</h1>
             <p class="subtitle">Experience lightning-fast Terabox link extraction</p>
         </header>
 
@@ -32,24 +32,32 @@
             </div>
 
             <section id="result">
-                <div class="file-preview">
-                    <div class="thumbnail-container">
-                        <img id="fileThumbnail" src="" alt="Video thumbnail">
+                <div class="player-container">
+                    <div class="video-wrapper">
+                        <video id="videoPlayer" controls controlsList="nodownload" poster="">
+                            <source src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
                     </div>
-                    <div class="file-info">
+
+                    <div class="file-details">
                         <h2 id="fileName" class="file-name">Video Title Here</h2>
                         <div class="file-meta">
                             <span>Size: <span id="fileSize">0 MB</span></span>
-                            <span>Direct Link</span>
                         </div>
 
-                        <a id="directDownloadLink" href="#" target="_blank" class="btn btn-primary"
-                            style="margin-bottom: 0.8rem;">
-                            Confirm Download
-                        </a>
-                        <button id="copyBtn" class="btn btn-secondary">
-                            Copy Link
-                        </button>
+                        <div class="action-buttons">
+                            <a id="directDownloadLink" href="#" target="_blank" class="btn btn-primary">
+                                Download Now
+                            </a>
+                            <button id="copyBtn" class="btn btn-secondary">
+                                Copy Link
+                            </button>
+                            <button id="backBtn" class="btn btn-secondary"
+                                style="background: transparent; border: 1px solid var(--border-color);">
+                                Back to Home
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -70,7 +78,7 @@
 
     <div id="toast" class="toast">Link copied to clipboard!</div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=1.1"></script>
 </body>
 
 </html>
