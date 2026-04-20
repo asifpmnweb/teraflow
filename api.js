@@ -122,7 +122,7 @@ async function getFileInfo(link, event, cookie) {
       thumbnail: fileInfo.thumbs?.url3 || "",
       file_size: getSize(parseInt(fileInfo.size || 0)),
       size_bytes: parseInt(fileInfo.size || 0),
-      proxy_url: `https://terabox.ashlynn.workers.dev/proxy?url=${encodeURIComponent(fileInfo.dlink)}&file_name=${encodeURIComponent(fileInfo.server_filename || 'download')}&cookie=${encodeURIComponent(cookie)}`,
+      proxy_url: `/api/proxy?url=${encodeURIComponent(fileInfo.dlink)}&filename=${encodeURIComponent(fileInfo.server_filename || 'download')}&cookie=${encodeURIComponent(cookie)}`,
     };
   } catch (error) {
     console.error("Error in getFileInfo:", error.message);
