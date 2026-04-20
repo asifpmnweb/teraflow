@@ -15,7 +15,15 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api/extractor",
+      "dest": "api.js"
+    },
+    {
+      "src": "/api/proxy",
+      "dest": "proxy.js"
+    },
+    {
+      "src": "/api/download",
       "dest": "index.js"
     },
     {

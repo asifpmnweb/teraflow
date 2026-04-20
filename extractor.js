@@ -121,8 +121,8 @@ async function extractTeraboxInfo(link) {
         console.warn("Direct link resolution failed.");
     }
 
-    // 4. Generate Proxy URL
-    const proxy_url = `https://terabox.ashlynn.workers.dev/proxy?url=${encodeURIComponent(file.dlink)}&file_name=${encodeURIComponent(file.server_filename || 'download')}&cookie=${encodeURIComponent(cookie)}`;
+    // 4. Generate Proxy URL (Bypass browser restrictions using our own proxy)
+    const proxy_url = `/api/proxy?url=${encodeURIComponent(file.dlink)}&filename=${encodeURIComponent(file.server_filename || 'download')}&cookie=${encodeURIComponent(cookie)}`;
 
     return {
       title: file.server_filename,
