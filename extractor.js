@@ -1,6 +1,17 @@
 const axios = require('axios');
 
-const DEFAULT_COOKIE = process.env.TERABOX_NDUS ? (process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`) : "";
+function getEnvCookie() {
+  const cookies = [];
+  if (process.env.TERABOX_NDUS) cookies.push(process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`);
+  if (process.env.browserid) cookies.push(`browserid=${process.env.browserid}`);
+  if (process.env.ndut_fmt) cookies.push(`ndut_fmt=${process.env.ndut_fmt}`);
+  if (process.env.ndut_fmv) cookies.push(`ndut_fmv=${process.env.ndut_fmv}`);
+  if (process.env.csrfToken) cookies.push(`csrfToken=${process.env.csrfToken}`);
+  if (process.env.lang) cookies.push(`lang=${process.env.lang}`);
+  return cookies.join('; ');
+}
+
+const DEFAULT_COOKIE = getEnvCookie();
 
 function getFormattedSize(sizeBytes) {
   if (sizeBytes >= 1024 * 1024 * 1024) {
@@ -50,13 +61,19 @@ async function extractTeraboxInfo(link) {
   else if (link.includes('terabox.com')) domain = 'www.terabox.com';
   else if (link.includes('nephobox.com')) domain = 'www.nephobox.com';
 
-  const axiosInstance = axios.create({
-    headers: {
+  const axiosHeaders = {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
       "Cookie": cookie,
       "Referer": `https://${domain}/`
-    },
+  };
+  
+  if (process.env.csrfToken) {
+    axiosHeaders['x-csrf-token'] = process.env.csrfToken;
+  }
+
+  const axiosInstance = axios.create({
+    headers: axiosHeaders,
     timeout: 15000,
     maxRedirects: 5
   });

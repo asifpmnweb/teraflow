@@ -1,4 +1,15 @@
-const DEFAULT_COOKIE = process.env.TERABOX_NDUS ? (process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`) : "";
+function getEnvCookie() {
+  const cookies = [];
+  if (process.env.TERABOX_NDUS) cookies.push(process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`);
+  if (process.env.browserid) cookies.push(`browserid=${process.env.browserid}`);
+  if (process.env.ndut_fmt) cookies.push(`ndut_fmt=${process.env.ndut_fmt}`);
+  if (process.env.ndut_fmv) cookies.push(`ndut_fmv=${process.env.ndut_fmv}`);
+  if (process.env.csrfToken) cookies.push(`csrfToken=${process.env.csrfToken}`);
+  if (process.env.lang) cookies.push(`lang=${process.env.lang}`);
+  return cookies.join('; ');
+}
+
+const DEFAULT_COOKIE = getEnvCookie();
 
 function getDLHeaders(cookie) {
   return {
@@ -10,6 +21,7 @@ function getDLHeaders(cookie) {
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
     "Cookie": cookie || DEFAULT_COOKIE,
+    ...(process.env.csrfToken ? { "x-csrf-token": process.env.csrfToken } : {})
   };
 }
 
