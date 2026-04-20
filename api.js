@@ -73,16 +73,20 @@ async function getFileInfo(link, event, cookie) {
       return { error: "Invalid link format. Please provide a valid TeraBox link." };
     }
 
-    response = await fetch(finalUrl, { headers });
     const text = await response.text();
 
-    const jsToken = findBetween(text, 'fn%28%22', '%22%29');
-    const logid = findBetween(text, 'dp-logid=', '&');
-    const bdstoken = findBetween(text, 'bdstoken":"', '"');
+    // Robust token extraction using Regex
+    const jsTokenMatch = text.match(/fn(?:%28%22|\(")([^%"]+)(?:%22%29|"\))/);
+    const bdstokenMatch = text.match(/["']bdstoken["']\s*:\s*["']([^"']+)["']/);
+    const logidMatch = text.match(/dp-logid=([^&"'\s]+)/);
+
+    const jsToken = jsTokenMatch ? jsTokenMatch[1] : null;
+    const bdstoken = bdstokenMatch ? bdstokenMatch[1] : null;
+    const logid = logidMatch ? logidMatch[1] : null;
 
     if (!jsToken || !logid || !bdstoken) {
       console.error("Failed to extract tokens:", { jsToken: !!jsToken, logid: !!logid, bdstoken: !!bdstoken });
-      return { error: "Authentication failed. Please check your cookies and try again." };
+      return { error: "Authentication failed. Tokens not found. Your cookie might be invalid or expired." };
     }
 
     const params = new URLSearchParams({
