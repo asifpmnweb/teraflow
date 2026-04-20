@@ -1,4 +1,4 @@
-const DEFAULT_COOKIE = "ndus=YbnifeeteHuiAI1CKBtVZBU4YN1p2W8BVrrtkvJP" // Fallback cookie
+const DEFAULT_COOKIE = process.env.TERABOX_NDUS ? (process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`) : "";
 
 function getHeaders(cookie) {
   return {
@@ -75,18 +75,23 @@ async function getFileInfo(link, event, cookie) {
 
     const text = await response.text();
 
+    // Check if we are redirected to a login page
+    if (text.includes("login") || text.includes("Verify") || text.includes("passport")) {
+       return { error: "Authentication failed. Terabox is requesting a login. Please update your 'ndus' cookie." };
+    }
+
     // Robust token extraction using Regex
     const jsTokenMatch = text.match(/fn(?:%28%22|\(")([^%"]+)(?:%22%29|"\))/);
-    const bdstokenMatch = text.match(/["']bdstoken["']\s*:\s*["']([^"']+)["']/);
-    const logidMatch = text.match(/dp-logid=([^&"'\s]+)/);
+    const bdstokenMatch = text.match(/["']bdstoken["']\s*:\s*["']([^"']*)["']/);
+    const logidMatch = text.match(/dp-logid=([^&"'\s]+)/) || text.match(/["']dp-logid["']\s* : \s*["']([^"']+)["']/);
 
     const jsToken = jsTokenMatch ? jsTokenMatch[1] : null;
-    const bdstoken = bdstokenMatch ? bdstokenMatch[1] : null;
+    const bdstoken = bdstokenMatch ? bdstokenMatch[1] : ""; 
     const logid = logidMatch ? logidMatch[1] : null;
 
-    if (!jsToken || !logid || !bdstoken) {
-      console.error("Failed to extract tokens:", { jsToken: !!jsToken, logid: !!logid, bdstoken: !!bdstoken });
-      return { error: "Authentication failed. Tokens not found. Your cookie might be invalid or expired." };
+    if (!jsToken || !logid) {
+      console.error("Failed to extract tokens:", { hasJsToken: !!jsToken, hasLogid: !!logid, hasBdstoken: !!bdstoken });
+      return { error: "Authentication failed. Tokens not found. Your cookie might be invalid or expired. Please update your 'ndus' cookie." };
     }
 
     const params = new URLSearchParams({
@@ -108,9 +113,11 @@ async function getFileInfo(link, event, cookie) {
     response = await fetch(`https://www.1024terabox.com/share/list?${params}`, { headers });
     const data = await response.json();
 
-    if (!data || !data.list || !data.list.length || data.errno) {
-      console.error("API error:", data.errno, data.errmsg);
-      return { error: "Unable to retrieve file information. Please verify your cookies are valid." };
+    if (!data || !data.list || !data.list.length) {
+      if (data && data.errno) {
+         return { error: `Terabox API Error: ${data.errmsg || 'Access denied'}. Your cookie might be expired.` };
+      }
+      return { error: "Unable to retrieve file information. The link might be private or deleted." };
     }
 
     const fileInfo = data.list[0];

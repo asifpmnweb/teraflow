@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const DEFAULT_COOKIE = "ndus=YbnifeeteHuiAI1CKBtVZBU4YN1p2W8BVrrtkvJP";
+const DEFAULT_COOKIE = process.env.TERABOX_NDUS ? (process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`) : "";
 
 function getFormattedSize(sizeBytes) {
   if (sizeBytes >= 1024 * 1024 * 1024) {
@@ -44,7 +44,11 @@ async function extractTeraboxInfo(link) {
     if (pathMatch) surl = pathMatch[1];
   }
 
-  const domain = link.includes('1024terabox.com') ? 'www.1024terabox.com' : 'www.terabox.app';
+  // Support multiple Terabox domains
+  let domain = 'www.terabox.app';
+  if (link.includes('1024terabox.com')) domain = 'www.1024terabox.com';
+  else if (link.includes('terabox.com')) domain = 'www.terabox.com';
+  else if (link.includes('nephobox.com')) domain = 'www.nephobox.com';
 
   const axiosInstance = axios.create({
     headers: {
@@ -76,17 +80,24 @@ async function extractTeraboxInfo(link) {
     // METHOD 2: Fallback to the Token-based approach (Required for some links)
     const tempReq = await axiosInstance.get(link);
     const respo = tempReq.data;
+
+    // Check if we are redirected to a login page
+    if (respo.includes("login") || respo.includes("Verify") || respo.includes("passport")) {
+       throw new Error("Authentication failed. Terabox is requesting a login. Please update your 'ndus' cookie.");
+    }
     
+    // Improved regex for tokens
     const jsTokenMatch = respo.match(/fn(?:%28%22|\(")([^%"]+)(?:%22%29|"\))/);
-    const bdstokenMatch = respo.match(/["']bdstoken["']\s*:\s*["']([^"']+)["']/);
-    const logidMatch = respo.match(/dp-logid=([^&"'\s]+)/);
+    const bdstokenMatch = respo.match(/["']bdstoken["']\s*:\s*["']([^"']*)["']/);
+    const logidMatch = respo.match(/dp-logid=([^&"'\s]+)/) || respo.match(/["']dp-logid["']\s*:\s*["']([^"']+)["']/);
 
     const jsToken = jsTokenMatch ? jsTokenMatch[1] : null;
-    const bdstoken = bdstokenMatch ? bdstokenMatch[1] : null;
+    const bdstoken = bdstokenMatch ? bdstokenMatch[1] : ""; // Allow empty bdstoken
     const logid = logidMatch ? logidMatch[1] : null;
 
-    if (!jsToken || !logid || !bdstoken) {
-      throw new Error("Authentication failed. Tokens not found. Please update your cookie or try a different link.");
+    if (!jsToken || !logid) {
+      console.error("Token Extraction Failed:", { hasJsToken: !!jsToken, hasLogid: !!logid, hasBdstoken: !!bdstoken });
+      throw new Error("Authentication failed. Tokens not found. Your cookie might be expired. Please update the 'ndus' cookie in the system.");
     }
 
     const listRes = await axiosInstance.get(`https://${domain}/share/list`, {
@@ -108,7 +119,11 @@ async function extractTeraboxInfo(link) {
         return formatResponse(listRes.data.list[0], cookie);
     }
 
-    throw new Error("Could not find any files. The link might be private or deleted.");
+    if (listRes.data && listRes.data.errno) {
+       throw new Error(`Terabox API Error (errno ${listRes.data.errno}): ${listRes.data.errmsg || 'Unknown error'}. Your cookie might be invalid.`);
+    }
+
+    throw new Error("Could not find any files. The link might be private, deleted, or requires a fresh cookie.");
 
   } catch (error) {
     console.error("Master Extraction Error:", error.message);
