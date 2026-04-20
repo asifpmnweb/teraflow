@@ -23,8 +23,8 @@ app.use(express.static(path.join(__dirname, '.')));
 
 // 2. API Endpoints
 app.get('/api/download', async (req, res) => {
-    const { url } = req.query;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    const url = req.query.url || req.query.data;
+    if (!url) return res.status(400).json({ error: 'URL or Data parameter is required' });
 
     try {
         console.log(`Processing URL: ${url}`);
