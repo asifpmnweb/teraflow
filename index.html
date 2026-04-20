@@ -63,6 +63,14 @@
             </section>
         </main>
 
+        <section class="about-section">
+            <h2>How it Works</h2>
+            <div class="about-content">
+                <p>To implement a bypass for a service like Terabox, the core strategy involves Request Masking and Session Simulation. Since Terabox normally requires a user to be logged in to access file metadata, our backend server acts as a proxy that mimics a legitimate human browser session. This is achieved by sending a server-side request to the Terabox internal API endpoints rather than the public-facing webpage. By embedding a realistic User-Agent string into the request headers, we ensure the Terabox server recognizes the request as coming from an authorized environment. This allows our backend to receive a raw JSON response containing the direct download link, which is then passed to our frontend player, effectively bypassing the login walls and landing pages.</p>
+                <p style="margin-top: 1rem;">Maintaining a stable bypass requires constant monitoring of security updates. We regularly update our logic to overcome Rate Limiting and Signature Validation used by Terabox. Furthermore, because we operate in a serverless environment, the bypass logic is highly efficient to ensure instant responses. Since we do not host any files, our system focuses on redirecting you to the extracted high-speed link rather than downloading the file through our own server, ensuring maximum Privacy and Security.</p>
+            </div>
+        </section>
+
         <footer class="disclaimer">
             <p>TeraDownloader.com is an independent utility and is not affiliated with, endorsed by, or associated with
                 the official TeraBox website, its domain (terabox.app), or Flextech Inc. Our platform serves exclusively

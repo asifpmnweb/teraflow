@@ -1,106 +1,130 @@
 const axios = require('axios');
 
+const DEFAULT_COOKIE = "ndus=Y2YqaCTteHuiU3Ud_MYU7vHoVW4DNBi0MPmg_1tQ";
+
+function getFormattedSize(sizeBytes) {
+  if (sizeBytes >= 1024 * 1024 * 1024) {
+    return `${(sizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  } else if (sizeBytes >= 1024 * 1024) {
+    return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+  } else if (sizeBytes >= 1024) {
+    return `${(sizeBytes / 1024).toFixed(2)} KB`;
+  }
+  return `${sizeBytes} bytes`;
+}
+
+function findBetween(str, start, end) {
+  const startIndex = str.indexOf(start) + start.length;
+  if (startIndex < start.length) return "";
+  const endIndex = str.indexOf(end, startIndex);
+  if (endIndex === -1) return "";
+  return str.substring(startIndex, endIndex);
+}
+
 /**
- * Extracts Terabox file information and download links.
- * Note: Some links may require authentication cookies for high-speed or private access.
+ * Extracts Terabox file information using improved logic.
  */
-async function extractTeraboxInfo(teraboxUrl) {
-    try {
-        // Support all Terabox alternative domains
-        const supportedKeywords = ['terabox', 'nephobox', '4funbox', 'mirrobox', 'momerybox', 'tibibox', '1024tera', 'freeterabox', 'dubox'];
-        if (!supportedKeywords.some(k => teraboxUrl.toLowerCase().includes(k))) {
-            throw new Error('Please provide a valid Terabox link.');
-        }
+async function extractTeraboxInfo(link) {
+  const cookie = process.env.COOKIE || DEFAULT_COOKIE;
 
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Referer': 'https://www.terabox.com/'
-        };
+  const axiosInstance = axios.create({
+    headers: {
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
+      "Connection": "keep-alive",
+      "DNT": "1",
+      "Host": "www.1024terabox.com",
+      "Upgrade-Insecure-Requests": "1",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0",
+      "sec-ch-ua": '"Microsoft Edge";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Cookie": cookie,
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Windows"',
+    },
+  });
 
-        // 1. Resolve the short URL to get surl and initial cookies
-        const initialResponse = await axios.get(teraboxUrl, { 
-            headers,
-            maxRedirects: 5,
-            validateStatus: (status) => status >= 200 && status < 400
-        });
+  try {
+    // 1. Initial request to resolve the link and get tokens
+    const tempReq = await axiosInstance.get(link);
+    if (!tempReq) throw new Error("Could not fetch the initial page");
+    
+    const responseUrl = tempReq.request.res.responseUrl;
+    const urlObj = new URL(responseUrl);
+    const surl = urlObj.searchParams.get("surl");
 
-        const finalUrl = initialResponse.request.res.responseUrl || teraboxUrl;
-        const surlMatch = finalUrl.match(/surl=([a-zA-Z0-9\-_]+)/) || teraboxUrl.match(/\/s\/([a-zA-Z0-9\-_]+)/);
-        
-        if (!surlMatch) {
-            throw new Error('Could not resolve the Terabox link. Make sure it is a valid share link.');
-        }
-        const surl = surlMatch[1];
-
-        // 2. Fetch file list using shorturlinfo API (often bypasses login requirements)
-        const infoUrl = `https://www.terabox.com/api/shorturlinfo?surl=${surl}`;
-        
-        const infoResponse = await axios.get(infoUrl, { 
-            headers: {
-                ...headers,
-                'User-Agent': 'Logitech/1.7.1 (Logitech G HUB; Windows 10; 10.0.19045)', // Specific high-trust User-Agent
-            }
-        });
-        
-        if (infoResponse.data.errno !== 0) {
-            console.warn(`shorturlinfo failed (Error ${infoResponse.data.errno}). Trying secondary API.`);
-            
-            // Secondary approach: share/list
-            const listUrl = `https://www.terabox.com/share/list?surl=${surl}&root=1&desc=1&order=name&num=20&page=1`;
-            const listResponse = await axios.get(listUrl, { headers });
-            
-            if (listResponse.data.errno !== 0) {
-                throw new Error('This link is private or restricted by Terabox. Please try a public share link.');
-            }
-            
-            var fileList = listResponse.data.list;
-        } else {
-            var fileList = infoResponse.data.list;
-        }
-
-        if (!fileList || fileList.length === 0) {
-            throw new Error('No files found in this link.');
-        }
-
-        const file = fileList[0];
-        const thumbnail = file.thumbs ? (file.thumbs.url3 || file.thumbs.url2 || file.thumbs.url1) : 'https://raw.githubusercontent.com/Antigravity/assets/main/video-placeholder.png';
-
-        // Direct Link Generation with specific download API
-        const downloadUrl = `https://www.terabox.com/share/download?surl=${surl}&fs_id=${file.fs_id}`;
-
-        return {
-            title: file.server_filename,
-            size: formatBytes(file.size),
-            thumbnail: thumbnail,
-            download_url: downloadUrl,
-            fs_id: file.fs_id,
-            path: file.path
-        };
-
-    } catch (error) {
-        console.error('Extraction Error Details:', error.response ? error.response.data : error.message);
-        if (error.message.includes('ECONNREFUSED')) throw new Error('Could not connect to Terabox. Try again later.');
-        throw error;
+    if (!surl) {
+      throw new Error("Invalid link format. No surl found.");
     }
-}
 
-function generateDownloadLink(file, surl) {
-    // Reconstructing a download link that often works for public files
-    // This uses the d.terabox.com pattern or the direct api call pattern
-    return `https://www.terabox.com/share/download?surl=${surl}&fs_id=${file.fs_id}`;
-}
+    const respo = tempReq.data;
+    const jsToken = findBetween(respo, "fn%28%22", "%22%29");
+    const logid = findBetween(respo, "dp-logid=", "&");
+    const bdstoken = findBetween(respo, 'bdstoken":"', '"');
 
-function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    if (!jsToken || !logid || !bdstoken) {
+      throw new Error("Authentication failed. Tokens not found. Your cookie might be invalid.");
+    }
+
+    // 2. Fetch the file list
+    const params = {
+      app_id: "250528",
+      web: "1",
+      channel: "dubox",
+      clienttype: "0",
+      jsToken: jsToken,
+      "dp-logid": logid,
+      page: "1",
+      num: "20",
+      by: "name",
+      order: "asc",
+      site_referer: responseUrl,
+      shorturl: surl,
+      root: "1,",
+    };
+
+    const listRes = await axiosInstance.get("https://www.1024terabox.com/share/list", {
+      params: params,
+    });
+
+    const data = listRes.data;
+    if (!data || !data.list || !data.list.length || data.errno) {
+      throw new Error(`API error: ${data?.errno || "No files found"}`);
+    }
+
+    const file = data.list[0];
+    
+    // 3. Resolve direct link (optional but good for validation)
+    let direct_link = file.dlink;
+    try {
+        const headRes = await axiosInstance.head(file.dlink, { withCredentials: false });
+        direct_link = headRes.request.res.responseUrl || file.dlink;
+    } catch (e) {
+        console.warn("Direct link resolution failed, using dlink as is.");
+    }
+
+    // 4. Generate Proxy URL (Bypass browser restrictions)
+    const proxy_url = `https://terabox.ashlynn.workers.dev/proxy?url=${encodeURIComponent(file.dlink)}&file_name=${encodeURIComponent(file.server_filename || 'download')}&cookie=${encodeURIComponent(cookie)}`;
+
+    return {
+      title: file.server_filename,
+      size: getFormattedSize(parseInt(file.size)),
+      thumbnail: file.thumbs?.url3 || file.thumbs?.url2 || file.thumbs?.url1 || "",
+      download_url: proxy_url, // Use proxy URL by default as it's more reliable
+      original_dlink: file.dlink,
+      direct_link: direct_link,
+      sizebytes: parseInt(file.size)
+    };
+  } catch (error) {
+    console.error("Extraction failed:", error.message);
+    throw error;
+  }
 }
 
 module.exports = { extractTeraboxInfo };
+
+
