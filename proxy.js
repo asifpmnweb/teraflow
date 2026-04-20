@@ -1,4 +1,4 @@
-const DEFAULT_COOKIE = "ndus=YbnifeeteHuiAI1CKBtVZBU4YN1p2W8BVrrtkvJP" // Fallback cookie
+const DEFAULT_COOKIE = process.env.TERABOX_NDUS ? (process.env.TERABOX_NDUS.startsWith('ndus=') ? process.env.TERABOX_NDUS : `ndus=${process.env.TERABOX_NDUS}`) : "";
 
 function getDLHeaders(cookie) {
   return {
