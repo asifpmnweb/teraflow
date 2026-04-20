@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const DEFAULT_COOKIE = "ndus=Y2YqaCTteHuiU3Ud_MYU7vHoVW4DNBi0MPmg_1tQ";
+const DEFAULT_COOKIE = "ndus=YbnifeeteHuiAI1CKBtVZBU4YN1p2W8BVrrtkvJP";
 
 function getFormattedSize(sizeBytes) {
   if (sizeBytes >= 1024 * 1024 * 1024) {
